@@ -1,0 +1,107 @@
+Querying#
+Cloud Firestore offers advanced capabilities for querying collections. Queries work with both one-time reads or subscribing to changes.
+
+Filtering#
+To filter documents within a collection, the where method can be chained onto a collection reference.
+ Filtering supports equality checks and "in" queries. For example, to filter users where their age is greater than 20:
+
+####FILTRANDO IDADE QUE E MAIOR Q 20... NA COLLECTION USERS
+
+FirebaseFirestore.instance
+  .collection('users')
+  .where('age', isGreaterThan: 20)
+  .get()
+  .then(...);
+Firestore also supports array queries. For example, to filter users who speak English (en) or Italian (it), use the arrayContainsAny filter:
+
+#FILTRANDO LINGUAGEM "EN" OU "IT" NA COLLECTION LANGUAGE
+
+FirebaseFirestore.instance
+  .collection('users')
+  .where('language', arrayContainsAny: ['en', 'it'])
+  .get()
+  .then(...);
+To learn more about all of the querying capabilities Cloud Firestore has to offer, view the Firebase documentation.
+
+
+###
+
+Limiting#
+To limit the number of documents returned from a query, use the limit method on a collection reference:
+
+### PEGANDO APENAS 2 USUARIOS... COM O COMANDO LIMIT
+
+FirebaseFirestore.instance
+  .collection('users')
+  .limit(2)
+  .get()
+  .then(...);
+You can also limit to the last documents within the collection query by using limitToLast:
+
+### ACESSANDO A COLECAO "USERS", ORDENANDO OS DADOS PELA IDADE "AGE", E PEGANDO
+### AS DUAS ULTIMAS IDADES DA LISTA (TEORICAMENTE AS 2 MAIORES IDADES)
+
+FirebaseFirestore.instance
+  .collection('users')
+  .orderBy('age')
+  .limitToLast(2)
+  .get()
+  .then(...);
+
+
+####
+
+Ordering#
+To order the documents by a specific value, use the orderBy method:
+
+### ACESSANDO A COLLECTION "USERS" E ORDENANDO PELA IDADE DE FORMA
+### DESCEDENTE (DO MAIOR PARA O MENOR)
+
+FirebaseFirestore.instance
+  .collection('users')
+  .orderBy('age', descending: true)
+  .get()
+  .then(...);
+
+
+Start & End Cursors#
+To start and/or end a query at a specific point within a collection, 
+you can pass a value to the startAt, endAt, startAfter or endBefore methods. 
+You must specify an order to use cursor queries, for example:
+
+### ACESSANDO A COLECAO "USERS" E ORDENANDO OS DADOS POR IDADE "AGE" E POR
+### EMPRESA "COMPANY", INDO DE ALPHABET A GOOGLE
+
+FirebaseFirestore.instance
+  .collection('users')
+  .orderBy('age')
+  .orderBy('company')
+  .startAt([4, 'Alphabet Inc.'])
+  .endAt([21, 'Google LLC'])
+  .get()
+  .then(...);
+
+
+You can further specify a DocumentSnapshot instead of a specific value, 
+by passing it to the 
+startAfterDocument, startAtDocument, endAtDocument or endBeforeDocument methods.
+For example:
+
+### PODEMOS DIZER TBM EM QUAL DOCUMENTO IREMOS COMECAR...
+
+FirebaseFirestore.instance
+  .collection('users')
+  .orderBy('age')
+  .startAfterDocument(documentSnapshot)
+  .get()
+  .then(...);
+
+
+####
+Query Limitations#
+Cloud Firestore does not support the following types of queries:
+
+Queries with range filters on different fields, as described in the previous section.
+Logical OR queries. In this case, you should create a separate query for each OR condition and merge the query results in your app.
+Queries with a != clause. In this case, you should split the query into a greater-than query and a less-than query. 
+For example, the query clause where("age", isNotEqualTo: 30) is not supported, however you can get the same result set by combining two queries, one with the clause where("age", isLessThan: 30) and one with the clause where("age", isGreaterThan: 30)

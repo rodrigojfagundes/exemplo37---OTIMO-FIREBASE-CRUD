@@ -1,0 +1,913 @@
+
+1 - main.dart
+
+import 'package:exemplo37/addeatualizausuario.dart';
+import 'package:exemplo37/addusuario.dart';
+import 'package:exemplo37/addusuario2.dart';
+import 'package:exemplo37/addusuario3.dart';
+import 'package:exemplo37/lernomeusuario.dart';
+import 'package:exemplo37/lerusuariotemporeal.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+void main() async {
+//inicializando o firebase
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+
+//usando a variavel FIRESTORE para chamar o FIREBASE
+  FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      //na Home nos estamos chamando a FUNCAO/CLASSE ADDUSER
+      //e estamos passando os parametros NOME, Empresa, e Idade
+      //para assim cadastrar o usuario com as informacoes passadas aqui
+      //
+      //home: AddUser('Rodrigo JF', 'AppBox', 28),
+      //
+      //fazendo a leitura do nome de um usuario passado acima
+      //q esta salvo no documento de nome: NLHxHlnIOvqaEoD7zXa1
+      //home: GetUserName('NLHxHlnIOvqaEoD7zXa1'),
+      //
+      //Em TEMPO REAL, lendo o q ta em TODOS os DOC da Collection...
+      //OU tbm em DOC especificos
+      //home: UserInformation(),
+      //
+      //AddUser2 ele vai passar os dados a baixo NOME, EMPRESA, IDADE
+      //para CLASSE/FUNCAO AddUser2, e dps vamos clicar em um container
+      //escrito AddUser e vamos add o usuario a COLLECTION
+      //home: AddUser2('Rodrigo JF - usando adduser2', 'AppBox -addUser2', 28),
+      //
+      //
+      //chamando a funcao adduser3 q vai add USUARIO e IDADE a uma
+      //DOCUMENTO ESPECIFICO da COLLECTION
+      //home: addUser3(),
+      //
+      //
+      //chamando a funcao ADDUSER4, q permite ADD e MODIFICAR/ATUALIZAR
+      //as informacoes de um DOC especifico, no caso os campo CHAVE e valor
+      //de USUARIO
+      home: addUser4(),
+    );
+  }
+}
+
+
+
+##############
+
+
+2 - addusuario.dart
+
+//ADD USUARIO A UM DOC ALEARTORIO clicando em um TEXTO
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class AddUser extends StatelessWidget {
+  final String fullName;
+  final String company;
+  final int age;
+
+  AddUser(this.fullName, this.company, this.age);
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+
+    Future<void> addUser() {
+      // Call the user's CollectionReference to add a new user
+      return users
+          .add({
+            'full_name': fullName, // John Doe
+            'company': company, // Stokes and Sons
+            'age': age // 42
+          })
+          .then((value) => print("User Added"))
+          .catchError((error) => print("Failed to add user: $error"));
+    }
+
+    return TextButton(
+      onPressed: addUser,
+      child: Text(
+        "Add User",
+      ),
+    );
+  }
+}
+
+
+##################
+
+
+
+3 - lernomeusuario.dart
+
+//LER OS NOMES QUE ESTA EM UM DOC ESPECIFICO DENTRO DA COLLECTION...
+//MAS A ATUALIZACAO NAO É EM TEMPO REAL
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+//a classe GetUserName recebe uma STRING q é o ID/NOME do documento
+//em q ta o NOME de usuario q queremos pegar
+class GetUserName extends StatelessWidget {
+  final String documentId;
+
+//classe GetuserName recebe o q ta na Variavel
+//DocumentId (que é o nome/id do documento)
+  GetUserName(this.documentId);
+
+  @override
+  Widget build(BuildContext context) {
+    //fazendo uma REFERENCIA/ATALHO para a COLECAO USERS...
+    //esse atalho vai se chamar users...
+    //pois assim ao digitar USERS vamos iniciar o FireB na colecao USERS
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+
+    //vamos retornar/criar um FutureBuilder de uma FOTO/SNAPSHOT de um DOCUMENTO
+    return FutureBuilder<DocumentSnapshot>(
+      //"funcao" future recebe a Colection Reference USERS (feita la em cima)
+      //e damos o comando .doc e passamos o ID/NOME do documento q queremos
+      //ler o full_name q esta armazenado...
+      future: users.doc(documentId).get(),
+      //a funcao BUILDER, vai receber um BuildContext e um context, q é o context
+      //passado la em cima no (widget build)... Depois vamos receber de forma
+      //assincrona um snapshot/foto do DOC q escolhemos
+      builder:
+          (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+        //se houver erro na hora de fazer o snapshot/foto
+        if (snapshot.hasError) {
+          //retorna a mensagem a baixo
+          return Text("Something went wrong");
+        }
+        //nao entendi mto bem... Mas acho q algo como
+        //dados de snapshot nao existem... algo assim
+        if (snapshot.hasData && !snapshot.data!.exists) {
+          //dai retorna a mensagem a baixo
+          return Text("Document does not exist");
+        }
+        //se conseguir fazer/DONE a conexao
+        if (snapshot.connectionState == ConnectionState.done) {
+          //EU ACHO, q estamos recebendo uma STRING q seria o FULL_NAME
+          //e, o DYNAMIC ali eu nao entendi mto bem... NAO SEI se um dado é
+          //STRING e outro é DINAMICO talvez...
+
+          Map<String, dynamic> data =
+              //os dados(data) q tiver no snapshot/foto do DOC serao enviados
+              //para STRING... o DYNAMIC eu nao entendi...
+              snapshot.data!.data() as Map<String, dynamic>;
+          //imprimindo os dados
+          return Text("Full Name: ${data['full_name']} ${data['last_name']}");
+        }
+
+        return Text("loading");
+      },
+    );
+  }
+}
+
+
+#########################
+
+
+4 - lerusuariotemporeal.dart
+
+//LER O QUE TA NA COLLECTION USUARIOS EM TEMPO REAL...
+//DE TODA COLLECTION, OU DE UM DOCUMENTO ESPECIFICO
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+//criando um stream... Pois sera em TEMPO REAL, entao é STREAM
+//o stream vai receber uma foto/snapshot da COLLECAO USER
+Stream collectionStream =
+    FirebaseFirestore.instance.collection('users').snapshots();
+//
+//o codigo a baixo ta comentado, mas e caso eu queira apenas fazer o STREAM
+//de um DOC especifico dentro da COLLECTION
+//exemplo apenas sincronizar em tempo real o q ta no doc FUNCIONARIOS
+//
+//Stream documentStream = FirebaseFirestore.instance
+//    .collection('users')
+//    .doc('NLHxHlnIOvqaEoD7zXa1')
+//    .snapshots();
+
+class UserInformation extends StatefulWidget {
+  @override
+  _UserInformationState createState() => _UserInformationState();
+}
+
+class _UserInformationState extends State<UserInformation> {
+  //criando o final/constante _userStream q vai ser um QuerySnapShot
+  //acho q o querysnapshot Requer/Pede uma Foto/Snapshot do estado atual
+  //da colecao USERS
+  final Stream<QuerySnapshot> _usersStream =
+      FirebaseFirestore.instance.collection('users').snapshots();
+
+  @override
+  Widget build(BuildContext context) {
+    //chamando a funcao StreamBuilder, que QUERY/REQUER/PEDE uma FOTO/snapshot
+    return StreamBuilder<QuerySnapshot>(
+      //o stream vai receber o nosso _usersStream criado acima...
+      //ele é inicializa a instancia do FireB e faz uma FOTO/SNAPSHOT de USERS
+      stream: _usersStream,
+      //metodo builder, recebe o buildcontext, e um contexto...
+      //dps passamos q vai receber de forma ASSINCRONA uma foto/snapshot...
+      //e por fim passamos o snapshot/foto da collection users
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        //se houver erro exibe a mensagem
+        if (snapshot.hasError) {
+          return Text('Something went wrong');
+        }
+        //se a conexao estiver carregando...
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          //exibe essa mensagem
+          return Text("Loading");
+        }
+        //apos carregar ele vai retornar um listview...
+        return ListView(
+          //dentro do listview fazemos um children q ira fazer um MAP com os SNAPSHOT
+          //dos DOC
+          children: snapshot.data!.docs.map((DocumentSnapshot document) {
+            //map recebe uma String QUE EU ACHO Q é os valores dos DOC, e o
+            //DYNAMIC eu ACHO q e para dizer q UM é String e o outro é QUALQUER TIPO
+            //de FORMATO... https://pt.stackoverflow.com/questions/454098/qual-a-diferen%C3%A7a-entre-dynamic-e-object
+            Map<String, dynamic> data =
+                document.data()! as Map<String, dynamic>;
+            //OBS: o codigo q ta em: https://firebase.flutter.dev/docs/firestore/usage/#realtime-changes
+            //faz Return ListTile()... Mas dessa forma da erro...
+            //entao gracas a Deus, descobri que tme que colocar
+            //Return Material(child: ListTile(CODIGO))... Para poder funcionar
+            return Material(
+              child: ListTile(
+                //mostrando os dados pegos do firebase
+                title: Text(data['full_name']),
+                subtitle: Text(data['company']),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+}
+
+#########################
+
+addusuario2.dart
+
+//ADD Usuario Clicando no Container... A UM DOC COM NOME ALEARTORIO
+
+// ignore_for_file: deprecated_member_use
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+//classe AddUser2 recebe 3 parametros passados na funcao main
+//ao chamar essa classe, NOME, COMPANY, IDADE
+class AddUser2 extends StatelessWidget {
+  final String fullName;
+  final String company;
+  final int age;
+
+//passandoo conteudo das variaveis acima para a CLASSE ADDUSER2
+  AddUser2(this.fullName, this.company, this.age);
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+    //acho q a "VARIAVEL" "users" recebe o FIREBASE instanciado/iniciado
+    //na COLECAO USERS... para ficar mais facil de chamar ao longo do codigo
+    //poem apenas "users."" ou "users =" ...
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+
+    //chamando o metodo/funcao/classe FUTURA ADDUSER2...
+    Future<void> addUser2() {
+      // Call the user's CollectionReference to add a new user
+      //estamos chamando o USERS q criamos ali na linha 26 do CODIGO...
+      //q e uma REFERENCIA/ATALHO para iniciar o firebase e acessar a colecao users
+      return users
+          //vamos criar um DOC com um nome ALEARTORIO e nele vamos add
+          //as 'CHAVES': valores a baixo
+          .add({
+            //criando a chave 'full_name' no doc do FIREBASE e add o nome q foi
+            //passado a 'variavel' fullName(nome foi passado no main.dart)
+            'full_name': fullName,
+            //criando a chave 'company' no doc do FIREBASE e add a empresa q foi
+            //passada na 'variavel' company(nome da empresa foi passado no main.dart)
+            'company': company,
+            //criando a chave 'age' no doc do FIREBASE e add a idade q foi
+            //passado a 'variavel' age(idade foi passado no main.dart)
+            'age': age // 42
+          })
+          //caso consiga add o valor, mostra no console User Added
+          .then((value) => print("User Added"))
+          //caso nao consiga add o valor retorna esta mensagem a baixo
+          .catchError((error) => print("Failed to add user: $error"));
+    }
+
+//criando um container escrito ADDUSER para q ao clicar add o usuario a COLLECTION
+    //
+    //criando colum
+    return Column(
+      //children = LISTA de CHILDS... ou seja pode por varios containers, etc...
+      children: [
+        //campo de deteccao de toque
+        GestureDetector(
+          //se for tocado chama a classe adduser2
+          onTap: addUser2,
+          //esse Gesture Detector vai ficar dentro de um container
+          //entao ao clicarmos no container vamos chamar a classe ADDUSER2
+          child: Container(
+            //parametros do container
+            height: 100,
+            width: 100,
+            color: Colors.blue,
+            child: Text('add user'),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+
+// CODIGO ORIGINAL ERA O Q TA A BAIXO, foi modificado
+//PQ o BOTAO FLATBUTTON nao funcionava...
+//dai na modificacao acima eu coloquei um CONTAINER no lugar
+
+//class AddUser extends StatelessWidget {
+//  final String fullName;
+//  final String company;
+//  final int age;
+//
+//  AddUser(this.fullName, this.company, this.age);
+//
+//  @override
+//  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+//    CollectionReference users = FirebaseFirestore.instance.collection('users');
+
+ //   Future<void> addUser() {
+      // Call the user's CollectionReference to add a new user
+//      return users
+//          .add({
+//            'full_name': fullName, // John Doe
+//            'company': company, // Stokes and Sons
+//            'age': age // 42
+//          })
+//          .then((value) => print("User Added"))
+//          .catchError((error) => print("Failed to add user: $error"));
+//    }
+
+//    return FlatButton(
+//      onPressed: addUser,
+//      child: Text(
+//        "Add User",
+//      ),
+//    );
+//  }
+//}
+
+##################
+
+addusuario3.dart
+
+
+//ADD usuario a UM DOC especifico
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class addUser3 extends StatelessWidget {
+  const addUser3({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+
+    //estamos fazendo uma REFERENCIA/ATALHO para a Coleccao USERS no firebase
+    //por assim vamos digitar APENAS USERS, e nao firebasefirestore.instance.collection...
+    //e assim podemos fazer o return a baixo
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    //
+    //chamando a funcao futura adduser3 e para ela passando os parametros...
+    Future<void> addUser3() {
+      //chamando a CollectionReference USERS q criamos ali em cima...
+      //para chamar o Firebase
+      return users
+          //criando um DOC com o nome de ABC12345
+          .doc('ABC12345')
+          //no DOC ABC12345, vamos criar a CHAVE full_name e age...
+          .set({'full_name': "Mary Jane", 'age': 18})
+          //se der certo acima
+          .then((value) => print("User Added"))
+          //se nao conseguir add... dai exibe essa mensagem
+          .catchError((error) => print("Failed to add user: $error"));
+    }
+
+//criando um container escrito ADDUSER para q ao clicar add o usuario a COLLECTION
+    return Column(
+      //o children é uma lista/vetor de child...
+      children: [
+        //o gesture detector é um CHILD q ao ser clicado ele executa uma acao
+        GestureDetector(
+          //ao ser clicado vai chamar a funcao AddUser3
+          onTap: addUser3,
+          //vai ser executado o gesture detector se clicar no container a baixo
+          child: Container(
+            height: 400,
+            width: 400,
+            color: Colors.blue,
+            child: Text('add user - em um doc especifico'),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+
+####################
+
+addeatualizausuarios.dart
+
+//ADD e MODIFICAR/ATUALIZAR um usuario especifico
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class addUser4 extends StatelessWidget {
+  const addUser4({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+
+    //estamos fazendo uma REFERENCIA/ATALHO para a Coleccao USERS no firebase
+    //por assim vamos digitar APENAS USERS, e nao firebasefirestore.instance.collection...
+    //e assim podemos fazer o return a baixo
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    //
+    //chamando a funcao futura adduser4 e para ela passando os parametros...
+    Future<void> addUser4() {
+      //acessando a COLLECTION REFERENCE feita ACIMA que é "variavel USERS", ela
+      //faz refecia a INICIALIZAR o FireBase e acessar a COLLECTION USERS
+      return users
+          // acessando o DOC de nome ABC123 criado na collection USERS
+          .doc('ABC123')
+          //criando a CHAVE(full_name) e passando o Valor Mary J, e criando a
+          //CHAVE(age) e passando a idade 28...
+          //CASO essas CHAVES ja tenham VALORES preenchidos, eles serao
+          //alterados para os valores a baixo
+          .set(
+            {'full_name': "Mary J", 'age': 28},
+            SetOptions(merge: true),
+          )
+          .then((value) =>
+              print("'full_name' & 'age' merged with existing data!"))
+          .catchError((error) => print("Failed to merge data: $error"));
+    }
+
+//criando um container escrito ADDUSER para q ao clicar add o usuario a COLLECTION
+    return Column(
+      //o children é uma lista/vetor de child...
+      children: [
+        //o gesture detector é um CHILD q ao ser clicado ele executa uma acao
+        GestureDetector(
+          //ao ser clicado vai chamar a funcao AddUser3
+          onTap: addUser4,
+          //vai ser executado o gesture detector se clicar no container a baixo
+          child: Container(
+            height: 400,
+            width: 400,
+            color: Colors.blue,
+            child: Text('add e atualiza usuario'),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+
+################
+
+atualizadocumentos.dart
+
+//MODIFICAR/ATUALIZAR um DOC/USUARIO especifico
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class updateUser extends StatelessWidget {
+  const updateUser({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+
+    //estamos fazendo uma REFERENCIA/ATALHO para a Coleccao USERS no firebase
+    //por assim vamos digitar APENAS USERS, e nao firebasefirestore.instance.collection...
+    //e assim podemos fazer o return a baixo
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    //a funcao FUTURE vai receber a nossa FUNCAO UPDATEUSER
+    Future<void> updateUser() {
+      //chamando a COLLECTION REFERENCE criada ali em cima
+      return users
+          //acessando o nosso DOC com o nome de ABC123
+          .doc('ABC123')
+          //com o comando UPDATE nos podemos CRIAR um NOVO conjunto CHAVE e VALOR
+          //assim como podemos MODIFICAR/ATUALIZAR os valores ja existente em uma
+          //CHAVE
+          .update({'company': 'Stokes and Sons2'})
+          //caso consiga fazer a atualizacao exibe a mensagem a baixo no
+          //prompt do VISUAL STUDIO CODE
+          .then((value) => print("User Updated"))
+          //caso de erro exibe a mensagem a baixo
+          .catchError((error) => print("Failed to update user: $error"));
+    }
+
+//criando um container escrito ATUALIZAR DOCUMENTO/USUARIO
+// para q ao clicar add o usuario a COLLECTION
+    return Column(
+      //o children é uma lista/vetor de child...
+      children: [
+        //o gesture detector é um CHILD q ao ser clicado ele executa uma acao
+        GestureDetector(
+          //ao ser clicado vai chamar a funcao atualizaDoc
+          onTap: updateUser,
+          //vai ser executado o gesture detector se clicar no container a baixo
+          child: Container(
+            height: 400,
+            width: 400,
+            color: Colors.blue,
+            child: Text('Atualizar DOCUMENTO/USUARIO'),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+##############
+
+atualizardocumentos2.dart
+
+//MODIFICAR/ATUALIZAR FAZENDO UM MAP no DOC
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class updateUser2 extends StatelessWidget {
+  const updateUser2({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+
+    //estamos fazendo uma REFERENCIA/ATALHO para a Coleccao USERS no firebase
+    //por assim vamos digitar APENAS USERS, e nao firebasefirestore.instance.collection...
+    //e assim podemos fazer o return a baixo
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    //a funcao FUTURE vai receber a nossa FUNCAO UPDATEUSER2
+    //
+    //
+    Future<void> updateUser2() {
+      //chamando a CollectionReference criada ACIMA chamade de USERS
+      //ela vai servir para se comunicar com o FIREBASE e acessar a COLLECTION USERS
+      return users
+          //acessando o DOC ABC123
+          .doc('ABC123')
+          //AQUI ESTMOS FAZENDO UM MAP... ficando assim INFO>ADDRES>ZIPCODE: valor
+          //assim meio q conseguimos "fazer uma escadinha"...
+          //tipo Funcionarios>Nome>Info>Address>ZipCode
+          .update({'info.address.zipcode': 90210})
+          //se conseguir add o valor
+          .then((value) => print("User Updated"))
+          //se nao consegiur exibe a mensagem
+          .catchError((error) => print("Failed to update user: $error"));
+    }
+
+//criando um container escrito ATUALIZAR DOCUMENTO/USUARIO
+// para q ao clicar add o usuario a COLLECTION
+    return Column(
+      //o children é uma lista/vetor de child...
+      children: [
+        //o gesture detector é um CHILD q ao ser clicado ele executa uma acao
+        GestureDetector(
+          //ao ser clicado vai chamar a funcao atualizaDoc
+          onTap: updateUser2,
+          //vai ser executado o gesture detector se clicar no container a baixo
+          child: Container(
+            height: 400,
+            width: 400,
+            color: Colors.blue,
+            child: Text('Atualizar DOCUMENTO/USUARIO... CRIAR MAP'),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+
+
+#####################
+
+
+atualizardocumentos3.dart
+
+//CRIAR/ATUALIZAR FAZENDO UM MAP no DOC
+//e passar uma GEOLOCALIZACAO de GPS como uma CHAVE:VALOR
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class updateUser3 extends StatelessWidget {
+  const updateUser3({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+
+    //estamos fazendo uma REFERENCIA/ATALHO para a Coleccao USERS no firebase
+    //por assim vamos digitar APENAS USERS, e nao firebasefirestore.instance.collection...
+    //e assim podemos fazer o return a baixo
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    //a funcao FUTURE vai receber a nossa FUNCAO UPDATEUSER2
+    //
+    //
+    Future<void> updateUser3() {
+      //chamando a COLLECTION REFERENCE USERS feita acima...
+      return users
+          //acessando o DOC de nome ABC123
+          .doc('ABC123')
+          //CRIANDO ou ATUALIZANDO o MAP info.addres.location e passando
+          //a localizacao de GPS a baixo...
+          //Obs os MAP funcionam como se fossem PASTAS e SUB-PASTAS
+          //entao meio q INFO>ADDRES>LOCATION
+          .update({'info.address.location': GeoPoint(53.483959, -2.244644)})
+          //caso o comando acima funcione, exibe a mensagem a baixo
+          .then((value) => print("User Updated"))
+          //caso o comando acima nao funcione exibe a mensagem a baixo
+          .catchError((error) => print("Failed to update user: $error"));
+    }
+
+//criando um container escrito ATUALIZAR DOCUMENTO/USUARIO
+// para q ao clicar add o usuario a COLLECTION
+    return Column(
+      //o children é uma lista/vetor de child...
+      children: [
+        //o gesture detector é um CHILD q ao ser clicado ele executa uma acao
+        GestureDetector(
+          //ao ser clicado vai chamar a funcao atualizaDoc
+          onTap: updateUser3,
+          //vai ser executado o gesture detector se clicar no container a baixo
+          child: Container(
+            height: 400,
+            width: 400,
+            color: Colors.blue,
+            child: Text('Atualizar DOCUMENTO/USUARIO... CRIAR MAP'),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+
+####################
+
+
+atualizardocumentosmapeufiz.dart
+
+//CRIAR/ATUALIZAR um DOC, fazendo um MAP dentro do DOC
+
+//Um MAP funciona como se fosse uma ARVORE de PASTAS...
+//entao conseguimos dentro do DOC ABC123 fazer a sequinte estrutura
+//EMPRESA>FUNCIONARIOS>NOMES>
+
+//mas da forma q foi construido aqui, o nome dessas "PASTAS" vao ser
+//definidos por uma VARIAVEL... Podendo assim ser alterado conforme o CODIGO
+//esta rodando
+
+// ignore_for_file: prefer_const_constructors
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class updateUser4 extends StatelessWidget {
+  const updateUser4({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+//definindo uma variavel de nome ADDRES com o nome de TIJUCAS
+    var address = 'tijucas';
+
+    //estamos fazendo uma REFERENCIA/ATALHO para a Coleccao USERS no firebase
+    //por assim vamos digitar APENAS USERS, e nao firebasefirestore.instance.collection...
+    //e assim podemos fazer o return a baixo
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    //a funcao FUTURE vai receber a nossa FUNCAO UPDATEUSER4
+    //
+    Future<void> updateUser4() {
+      //chamando a CollectionReference USERS feita acima
+      return users
+          //acessando o DOC ABC123
+          .doc('ABC123')
+          //criando um MAP com o nome de INFO, em q o segundo nivel desse MAP
+          //e tera o nome q associamos a variavel $ADDRES, ou seja TIJUCAS
+          //e o ultimo nivel é a LOCATION, no qual passamos um endereco de GPS
+          .update({'info.$address.location': GeoPoint(53.483959, -2.244644)})
+          .then((value) => print("User Updated"))
+          .catchError((error) => print("Failed to update user: $error"));
+    }
+
+//criando um container escrito ATUALIZAR DOCUMENTO/USUARIO
+// para q ao clicar add o usuario a COLLECTION
+    return Column(
+      //o children é uma lista/vetor de child...
+      children: [
+        //o gesture detector é um CHILD q ao ser clicado ele executa uma acao
+        GestureDetector(
+          //ao ser clicado vai chamar a funcao atualizaDoc
+          onTap: updateUser4,
+          //vai ser executado o gesture detector se clicar no container a baixo
+          child: Container(
+            height: 400,
+            width: 400,
+            color: Colors.blue,
+            child: Text('Atualizar DOCUMENTO/USUARIO... CRIAR MAP'),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+
+
+###########################
+
+
+atualizardocumentos5.dart
+
+//CRIAR/ATUALIZAR FAZENDO o UP de uma IMAGEM para um DOC
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
+
+class updateUser5 extends StatelessWidget {
+  const updateUser5({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+
+    //estamos fazendo uma REFERENCIA/ATALHO para a Coleccao USERS no firebase
+    //por assim vamos digitar APENAS USERS, e nao firebasefirestore.instance.collection...
+    //e assim podemos fazer o return a baixo
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    //a funcao FUTURE vai receber a nossa FUNCAO UPDATEUSER5
+    //
+    //
+    Future<void> updateUser5() {
+      //chamando a funcao rootBudle (nao sei como ela funciona)
+      return rootBundle
+          //carregando a imagem q ta no diretorio ali... na vdd e .load('assets/images/sample.jpg')
+          .load('lib/assets/images/sample.jpg')
+          //ACHO Q estamos transformando os BYTE da IMAGEM acima em uma LISTA EU ACHO
+          .then((bytes) => bytes.buffer.asUint8List())
+          //EU ACHO Q a lista vai virar o AVATAR
+          .then((avatar) {
+            //acessando o DOC ABC123 e CRIANDO ou ATUALIZANDO o AVATAR... Ou seja
+            //enviando a imagem
+            return users.doc('ABC123').update({'info.avatar': Blob(avatar)});
+          })
+          //se conseguir enviar exibe esta mensagem
+          .then((value) => print("User Updated"))
+          //se nao conseguiu enviar exibe esta mensagem
+          .catchError((error) => print("Failed to update user: $error"));
+    }
+
+//criando um container escrito ATUALIZAR DOCUMENTO/USUARIO
+// para q ao clicar add o usuario a COLLECTION
+    return Column(
+      //o children é uma lista/vetor de child...
+      children: [
+        //o gesture detector é um CHILD q ao ser clicado ele executa uma acao
+        GestureDetector(
+          //ao ser clicado vai chamar a funcao atualizaDoc
+          onTap: updateUser5,
+          //vai ser executado o gesture detector se clicar no container a baixo
+          child: Container(
+            height: 400,
+            width: 400,
+            color: Colors.blue,
+            child: Text('upar/atualizar imagem para o doc'),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+####################
+
+
+deletardados.dart
+
+
+//CRIAR/ATUALIZAR FAZENDO o UP de uma IMAGEM para um DOC
+
+import 'package:flutter/material.dart';
+// Import the firebase_core and cloud_firestore plugin
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
+
+class deleteUser extends StatelessWidget {
+  const deleteUser({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Create a CollectionReference called users that references the firestore collection
+
+    //estamos fazendo uma REFERENCIA/ATALHO para a Coleccao USERS no firebase
+    //por assim vamos digitar APENAS USERS, e nao firebasefirestore.instance.collection...
+    //e assim podemos fazer o return a baixo
+    CollectionReference users = FirebaseFirestore.instance.collection('users');
+    //a funcao FUTURE vai receber a nossa FUNCAO deleteUser
+    //
+    Future<void> deleteUser() {
+      //acessando a Collection Reference criada acima
+      return users
+          //passando o nome do DOC q iremos deletar
+          .doc('DZtdKR5JAhxBpsgdHrRR')
+          //passando o comando delete para deletar o DOC
+          .delete()
+          //se for deletado exibe a mensagem User Deletado
+          .then((value) => print("User Deleted"))
+          //se ocorrer erro exibe a mensagem a baixo
+          .catchError((error) => print("Failed to delete user: $error"));
+    }
+
+//criando um container escrito ATUALIZAR DOCUMENTO/USUARIO
+// para q ao clicar add o usuario a COLLECTION
+    return Column(
+      //o children é uma lista/vetor de child...
+      children: [
+        //o gesture detector é um CHILD q ao ser clicado ele executa uma acao
+        GestureDetector(
+          //ao ser clicado vai chamar a funcao deleteUser
+          onTap: deleteUser,
+          //vai ser executado o gesture detector se clicar no container a baixo
+          child: Container(
+            height: 400,
+            width: 400,
+            color: Colors.blue,
+            child: Text('deletar doc'),
+          ),
+        )
+      ],
+    );
+  }
+}
